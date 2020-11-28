@@ -611,7 +611,7 @@ public:
         return result;
     }
 
-    virtual status_t getLayerDebugInfo(std::vector<LayerDebugInfo>* outLayers)
+    virtual status_t getLayerDebugInfo(std::vector<LayerDebugInfo>* outLayers) const
     {
         if (!outLayers) {
             return UNEXPECTED_NULL;

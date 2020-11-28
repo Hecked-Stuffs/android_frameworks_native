@@ -1607,15 +1607,22 @@ status_t SurfaceFlinger::injectVSync(nsecs_t when) {
     return NO_ERROR;
 }
 
-status_t SurfaceFlinger::getLayerDebugInfo(std::vector<LayerDebugInfo>* outLayers)
+status_t SurfaceFlinger::getLayerDebugInfo(std::vector<LayerDebugInfo>* outLayers) const
         NO_THREAD_SAFETY_ANALYSIS {
-    outLayers->clear();
-    postMessageSync(new LambdaMessage([&]() { 
-            mDrawingState.traverseInZOrder([&](Layer* layer) {
-            outLayers->push_back(layer->getLayerDebugInfo());
-        });
+    // Try to acquire a lock for 1s, fail gracefully
+    const status_t err = mStateLock.timedLock(s2ns(1));
+    const bool locked = (err == NO_ERROR);
+    if (!locked) {
+        ALOGE("LayerDebugInfo: SurfaceFlinger unresponsive (%s [%d]) - exit", strerror(-err), err);
+        return TIMED_OUT;
+    }
 
-    }));
+    outLayers->clear();
+    mCurrentState.traverseInZOrder([&](Layer* layer) {
+        outLayers->push_back(layer->getLayerDebugInfo());
+    });
+
+    mStateLock.unlock();
     return NO_ERROR;
 }
 
